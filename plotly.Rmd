@@ -6,9 +6,6 @@ output:
     toc_float: true
 ---
 
-# Examples of plotly
-
-We're gonna look at NYC Airbnb data.
 
 ```{r}
 library(tidyverse)
@@ -17,73 +14,53 @@ library(plotly)
 ```
 
 ```{r}
-data("nyc_airbnb")
+data("ny_noaa")
 
-nyc_airbnb = 
-  nyc_airbnb |>
-  mutate(rating = review_scores_location / 2) |>
-  select(neighbourhood_group, neighbourhood, rating, price, room_type, lat, long) |>
-  filter(
-    neighbourhood_group == "Manhattan", 
-    price %in% 100:500,
-    room_type == "Entire home/apt"
+ny_noaa = 
+  ny_noaa |>
+  drop_na() |>
+  mutate(
+    tmax = as.numeric(tmax),
+    tmin = as.numeric(tmin)
   ) |>
-  drop_na(rating)
-
-nyc_airbnb
+  mutate(year = year(date))
 ```
 
 # Plotly plots
 
-## scatterplot
+## Scatterplot
 
 ```{r}
-nyc_airbnb |>
-  mutate(text_label = str_c("Price: $", price, "\nRating: ", rating)) |> #\n new line
-  plot_ly(x = ~lat, y = ~long, color = ~price, text = ~text_label, 
-          alpha = .5, type = "scatter", mode = "markers")
+ny_noaa |>
+  filter(year == 2002, month(date) %in% 6:9) |> 
+  plot_ly(x = ~tmin, y = ~tmax, text = ~date, color = ~factor(month(date)), 
+          alpha = .5, type = "scatter", mode = "markers", colors = "viridis") |>
+  layout(title = "tmax vs tmin (June to September 2002)",
+         xaxis = list(title = "tmax"),
+         yaxis = list(title = "tmin"),
+         coloraxis = list(title = "Month"))
 ```
 
-## boxplot
+## Boxplot
 
 ```{r}
-nyc_airbnb |>
-  mutate(neighbourhood = fct_reorder(neighbourhood, price)) |>
-  plot_ly(
-    y = ~price, x = ~neighbourhood, color = ~neighbourhood,
-    type = "box", colors = "viridis")
+ny_noaa |>
+  plot_ly(y = ~tmax, type = "box", name = "tmax") |>
+  add_trace(y = ~tmin, type = "box", name = "tmin") |>
+  layout(title = "tmax and tmin Distribution",
+         yaxis = list(title = "Temperature"))
 ```
 
-## bar plot
+## Bar plot
 
 ```{r}
-nyc_airbnb |>
-  count(neighbourhood) |>
-  mutate(neighbourhood = fct_reorder(neighbourhood, n)) |>
-  plot_ly(
-    x = ~neighbourhood, y = ~n, color = ~neighbourhood,
-    type = "bar", colors = "viridis"
-  )
+ny_noaa |>
+  filter(year %in% 2001:2010) |>
+  group_by(year) |>
+  summarize(avg_snow = mean(snow, na.rm = TRUE)) |>
+  plot_ly(x = ~year, y = ~avg_snow, type = 'bar', name = 'Snowfall') |>
+  layout(title = "Average Snowfall (2001-2010)",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Average Snowfall"))
 ```
-
-# ggplotly
-
-```{r}
-ggp_scatter = 
-  nyc_airbnb |>
-  ggplot(aes(x = lat, y = long, color = price)) +
-  geom_point()
-
-ggplotly(ggp_scatter)
-```
-
-
-
-
-
-
-
-
-
-
 

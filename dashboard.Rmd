@@ -11,23 +11,20 @@ output:
 library(tidyverse)
 library(p8105.datasets)
 library(plotly)
-
 library(flexdashboard)
 ```
 
 ```{r}
-data("nyc_airbnb")
+data("ny_noaa")
 
-nyc_airbnb = 
-  nyc_airbnb |>
-  mutate(rating = review_scores_location / 2) |>
-  select(neighbourhood_group, neighbourhood, rating, price, room_type, lat, long) |>
-  filter(
-    neighbourhood_group == "Manhattan", 
-    price %in% 100:500,
-    room_type == "Entire home/apt"
+ny_noaa = 
+  ny_noaa |>
+  drop_na() |>
+  mutate(
+    tmax = as.numeric(tmax),
+    tmin = as.numeric(tmin)
   ) |>
-  drop_na(rating)
+  mutate(avg_t = (tmax + tmin) / 2)
 ```
 
 Column {data-width=650}
@@ -36,11 +33,14 @@ Column {data-width=650}
 ### Chart A
 
 ```{r}
-nyc_airbnb |>
-  mutate(text_label = str_c("Price: $", price, "\nRating: ", rating)) |> #\n new line
-  plot_ly(
-    x = ~lat, y = ~long, color = ~price, text = ~text_label, 
-    alpha = .5, type = "scatter", mode = "markers")
+ny_noaa |>
+  filter(year == 2002, month(date) %in% 6:9) |> 
+  plot_ly(x = ~tmin, y = ~tmax, text = ~date, color = ~factor(month(date)), 
+          alpha = .5, type = "scatter", mode = "markers", colors = "viridis") |>
+  layout(title = "tmax vs tmin (June to September 2002)",
+         xaxis = list(title = "tmax"),
+         yaxis = list(title = "tmin"),
+         coloraxis = list(title = "Month"))
 ```
 
 Column {data-width=350}
@@ -49,22 +49,23 @@ Column {data-width=350}
 ### Chart B
 
 ```{r}
-nyc_airbnb |>
-  mutate(neighbourhood = fct_reorder(neighbourhood, price)) |>
-  plot_ly(
-    y = ~price, x = ~neighbourhood, color = ~neighbourhood,
-    type = "box", colors = "viridis")
+ny_noaa |>
+  plot_ly(y = ~tmax, type = "box", name = "tmax") |>
+  add_trace(y = ~tmin, type = "box", name = "tmin") |>
+  layout(title = "tmax and tmin Distribution",
+         yaxis = list(title = "Temperature"))
 ```
 
 ### Chart C
 
 ```{r}
-nyc_airbnb |>
-  count(neighbourhood) |>
-  mutate(neighbourhood = fct_reorder(neighbourhood, n)) |>
-  plot_ly(
-    x = ~neighbourhood, y = ~n, color = ~neighbourhood,
-    type = "bar", colors = "viridis"
-  )
+ny_noaa |>
+  filter(year %in% 2001:2010) |>
+  group_by(year) |>
+  summarize(avg_snow = mean(snow, na.rm = TRUE)) |>
+  plot_ly(x = ~year, y = ~avg_snow, type = 'bar', name = 'Snowfall') |>
+  layout(title = "Average Snowfall (2001-2010)",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Average Snowfall"))
 ```
 
