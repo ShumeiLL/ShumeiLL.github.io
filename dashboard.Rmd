@@ -34,13 +34,14 @@ Column {data-width=650}
 
 ```{r}
 ny_noaa |>
-  filter(year == 2002, month(date) %in% 6:9) |> 
+  filter(year(date) == 2002, month(date) %in% 6:9) |> 
   plot_ly(x = ~tmin, y = ~tmax, text = ~date, color = ~factor(month(date)), 
           alpha = .5, type = "scatter", mode = "markers", colors = "viridis") |>
   layout(title = "tmax vs tmin (June to September 2002)",
          xaxis = list(title = "tmax"),
          yaxis = list(title = "tmin"),
          coloraxis = list(title = "Month"))
+
 ```
 
 Column {data-width=350}
@@ -60,8 +61,8 @@ ny_noaa |>
 
 ```{r}
 ny_noaa |>
-  filter(year %in% 2001:2010) |>
-  group_by(year) |>
+  filter(year(date) %in% 2001:2010) |>
+  group_by(year(date)) |>
   summarize(avg_snow = mean(snow, na.rm = TRUE)) |>
   plot_ly(x = ~year, y = ~avg_snow, type = 'bar', name = 'Snowfall') |>
   layout(title = "Average Snowfall (2001-2010)",
